@@ -118,7 +118,7 @@ describe('PointService', () => {
             expect(result).toEqual(chargedUser);
         })
 
-        it('잔고 한도를 넘기는 경우에는, 예외(Throw) 발생', async () => {
+        it('잔고가 초과될 경우에는, 예외(Throw) 발생', async () => {
             const initialUser = { id: 1, point: 999_999_999, updateMillis: 1000 };
 
             (userDbMock.selectById as jest.Mock).mockResolvedValue(initialUser);
