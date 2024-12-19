@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, BadRequestException } from '@nestjs/common'
 import { PointHistory, TransactionType, UserPoint } from './point.model'
 import { UserPointTable } from '../database/userpoint.table'
 import { PointHistoryTable } from '../database/pointhistory.table'
@@ -6,6 +6,9 @@ import { PointHistoryTable } from '../database/pointhistory.table'
 
 @Injectable()
 export class PointService {
+    // 포인트 한도 10억 (가정)
+    private static MAX_POINT = 1000000000
+
     constructor(
         private readonly userDb: UserPointTable,
         private readonly historyDb: PointHistoryTable,
@@ -25,6 +28,11 @@ export class PointService {
         // 데이터 조회
         const userPoint = await this.userDb.selectById(userId)
         const newAmount = userPoint.point + amount
+
+        // [예외2] 한도 초과
+        if (newAmount > PointService.MAX_POINT) {
+            throw new BadRequestException('포인트의 한도를 초과하였습니다. (10억)')
+        }
 
         // 데이터 반영
         const updatedData = await this.userDb.insertOrUpdate(userId, newAmount)
@@ -46,7 +54,7 @@ export class PointService {
 
         // [예외1] 잔고 부족
         if (newAmount < 0) {
-            throw new Error('포인트의 잔고가 부족합니다.')
+            throw new BadRequestException('포인트의 잔고가 부족합니다.')
         }
 
         // 데이터 반영
