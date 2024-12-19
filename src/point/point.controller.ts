@@ -1,8 +1,8 @@
-import { Body, Controller, Get, Param, Patch, ValidationPipe } from "@nestjs/common";
-import { PointHistory, TransactionType, UserPoint } from "./point.model";
-import { UserPointTable } from "src/database/userpoint.table";
-import { PointHistoryTable } from "src/database/pointhistory.table";
-import { PointBody as PointDto } from "./point.dto";
+import { Body, Controller, Get, Param, Patch, ValidationPipe } from '@nestjs/common'
+import { PointHistory, TransactionType, UserPoint } from './point.model'
+import { UserPointTable } from '../database/userpoint.table'
+import { PointHistoryTable } from '../database/pointhistory.table'
+import { PointBody as PointDto } from './point.dto'
 
 
 @Controller('/point')
