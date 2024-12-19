@@ -1,14 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing'
-import { PointController } from './point.controller'
-import { TransactionType } from './point.model'
 import { PointService } from './point.service'
+import { TransactionType } from './point.model'
 import { UserPointTable } from '../database/userpoint.table'
 import { PointHistoryTable } from '../database/pointhistory.table'
-import { PointBody as PointDto } from './point.dto'
 
 
-describe('PointController', () => {
-    let pointController: PointController;
+describe('PointService', () => {
+    let service: PointService;
     let userDbMock: Partial<UserPointTable>;
     let historyDbMock: Partial<PointHistoryTable>;
 
@@ -26,7 +24,6 @@ describe('PointController', () => {
         };
 
         const module: TestingModule = await Test.createTestingModule({
-            controllers: [PointController],
             providers: [
                 PointService,
                 { provide: UserPointTable, useValue: userDbMock },
@@ -34,11 +31,11 @@ describe('PointController', () => {
             ],
         }).compile();
 
-        // PointController Mock
-        pointController = module.get<PointController>(PointController);
+        // PointService Mock
+        service = module.get<PointService>(PointService);
     })
 
-    describe('GET /point/:id', () => {
+    describe('getUserPoint', () => {
         it('존재하는 유저인 경우에만, 포인트 반환', async () => {
             (userDbMock.selectById as jest.Mock).mockResolvedValue({
                 id: 1,
@@ -46,7 +43,7 @@ describe('PointController', () => {
                 updateMillis: 1000,
             });
 
-            const result = await pointController.point('1');
+            const result = await service.getUserPoint(1);
             expect(result).toEqual({ id: 1, point: 100, updateMillis: 1000 });
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
         })
@@ -58,13 +55,13 @@ describe('PointController', () => {
                 updateMillis: 9999,
             });
 
-            const result = await pointController.point('2');
+            const result = await service.getUserPoint(2);
             expect(result.point).toBe(0);
             expect(userDbMock.selectById).toHaveBeenCalledWith(2);
         })
     })
 
-    describe('GET /point/:id/histories', () => {
+    describe('getUserHistories', () => {
         it('유저의 히스토리(유저ID, 포인트량, 작업종류, 작업시간) 반환', async () => {
             const mockHistories = [
                 {
@@ -84,35 +81,34 @@ describe('PointController', () => {
             ];
             (historyDbMock.selectAllByUserId as jest.Mock).mockResolvedValue(mockHistories);
 
-            const result = await pointController.history('1');
+            const result = await service.getUserHistories(1);
             expect(result).toEqual(mockHistories);
             expect(historyDbMock.selectAllByUserId).toHaveBeenCalledWith(1);
         })
     })
 
-    describe('PATCH /point/:id/charge', () => {
+    describe('chargeUserPoint', () => {
         it('유저의 포인트 충전 및 히스토리 추가', async () => {
-            const initialUser = { id: 1, point: 100, updateMillis: 1000 };
-            const chargedUser = { id: 1, point: 150, updateMillis: 2000 };
+            const initialUser = { id: 1, point: 123, updateMillis: 1000 };
+            const chargedUser = { id: 1, point: 777, updateMillis: 2000 };
 
             (userDbMock.selectById as jest.Mock).mockResolvedValue(initialUser);
             (userDbMock.insertOrUpdate as jest.Mock).mockResolvedValue(chargedUser);
             (historyDbMock.insert as jest.Mock).mockResolvedValue({
                 id: 1,
                 userId: 1,
-                amount: 50,
+                amount: 654,
                 type: TransactionType.CHARGE,
                 timeMillis: 2000,
             });
 
-            const dto: PointDto = { amount: 50 };
-            const result = await pointController.charge('1', dto);
+            const result = await service.chargeUserPoint(1, 654);
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
-            expect(userDbMock.insertOrUpdate).toHaveBeenCalledWith(1, 150);
+            expect(userDbMock.insertOrUpdate).toHaveBeenCalledWith(1, 777);
             expect(historyDbMock.insert).toHaveBeenCalledWith(
                 1,
-                50,
+                654,
                 TransactionType.CHARGE,
                 2000,
             );
@@ -121,7 +117,7 @@ describe('PointController', () => {
         })
     })
 
-    describe('PATCH /point/:id/use', () => {
+    describe('useUserPoint', () => {
         it('잔고가 충분한 경우에만, 유저의 포인트 사용 및 히스토리 추가', async () => {
             const initialUser = { id: 1, point: 100, updateMillis: 1000 };
             const usedUser = { id: 1, point: 70, updateMillis: 2000 };
@@ -136,8 +132,7 @@ describe('PointController', () => {
                 timeMillis: 2000,
             });
 
-            const dto: PointDto = { amount: 30 };
-            const result = await pointController.use('1', dto);
+            const result = await service.useUserPoint(1, 30);
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
             expect(userDbMock.insertOrUpdate).toHaveBeenCalledWith(1, 70);
@@ -155,8 +150,7 @@ describe('PointController', () => {
             const initialUser = { id: 1, point: 20, updateMillis: 1000 };
             (userDbMock.selectById as jest.Mock).mockResolvedValue(initialUser);
 
-            const dto: PointDto = { amount: 30 };
-            await expect(pointController.use('1', dto)).rejects.toThrow('포인트의 잔고가 부족합니다.');
+            await expect(service.useUserPoint(1, 30)).rejects.toThrow('포인트의 잔고가 부족합니다.');
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
             expect(userDbMock.insertOrUpdate).not.toHaveBeenCalled();
