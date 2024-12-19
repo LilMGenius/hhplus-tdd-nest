@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { PointController } from './point.controller'
 import { TransactionType } from './point.model'
+import { PointService } from './point.service'
 import { UserPointTable } from '../database/userpoint.table'
 import { PointHistoryTable } from '../database/pointhistory.table'
-import { PointBody } from './point.dto'
+import { PointBody as PointDto } from './point.dto'
 
 
 describe('PointController', () => {
@@ -27,6 +28,7 @@ describe('PointController', () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [PointController],
             providers: [
+                PointService,
                 { provide: UserPointTable, useValue: userDbMock },
                 { provide: PointHistoryTable, useValue: historyDbMock },
             ],
@@ -103,7 +105,7 @@ describe('PointController', () => {
                 timeMillis: 2000,
             });
 
-            const dto: PointBody = { amount: 50 };
+            const dto: PointDto = { amount: 50 };
             const result = await pointController.charge('1', dto);
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
@@ -134,7 +136,7 @@ describe('PointController', () => {
                 timeMillis: 2000,
             });
 
-            const dto: PointBody = { amount: 30 };
+            const dto: PointDto = { amount: 30 };
             const result = await pointController.use('1', dto);
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
@@ -153,7 +155,7 @@ describe('PointController', () => {
             const initialUser = { id: 1, point: 20, updateMillis: 1000 };
             (userDbMock.selectById as jest.Mock).mockResolvedValue(initialUser);
 
-            const dto: PointBody = { amount: 30 };
+            const dto: PointDto = { amount: 30 };
             await expect(pointController.use('1', dto)).rejects.toThrow('포인트의 잔고가 부족합니다.');
 
             expect(userDbMock.selectById).toHaveBeenCalledWith(1);
