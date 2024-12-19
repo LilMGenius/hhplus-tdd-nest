@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { PointService } from './point.service'
+import { PointLockManager } from './point.lock-manager'
 import { TransactionType } from './point.model'
 import { UserPointTable } from '../database/userpoint.table'
 import { PointHistoryTable } from '../database/pointhistory.table'
@@ -26,6 +27,7 @@ describe('PointService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 PointService,
+                PointLockManager,
                 { provide: UserPointTable, useValue: userDbMock },
                 { provide: PointHistoryTable, useValue: historyDbMock },
             ],
